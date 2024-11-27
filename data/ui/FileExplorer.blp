@@ -1,0 +1,174 @@
+using Gtk 4.0;
+
+template $FileExplorer : Gtk.Window {
+  title: "File Explorer";
+  default-width: 800;
+  default-height: 600;
+
+  EventControllerKey {
+    key-released => $key_released();
+  }
+
+  Box {
+    orientation: horizontal;
+
+    // Sidebar with important folders
+    Box {
+      orientation: vertical;
+      spacing: 6;
+      margin-end: 12;
+      margin-start: 12;
+      margin-top: 12;
+      width-request: 200;
+
+      ListBox important_folders_list {
+        selection-mode: single;
+
+        ListBoxRow {
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+            margin-start: 6;
+            margin-end: 6;
+            margin-top: 6;
+            margin-bottom: 6;
+
+            Image {
+              icon-name: "user-home-symbolic";
+              pixel-size: 24;
+            }
+            Label { 
+              label: "Home";
+              halign: start;
+            }
+          }
+        }
+
+        ListBoxRow {
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+            margin-start: 6;
+            margin-end: 6;
+            margin-top: 6;
+            margin-bottom: 6;
+
+            Image {
+              icon-name: "folder-documents-symbolic";
+              pixel-size: 24;
+            }
+            Label { 
+              label: "Documents";
+              halign: start;
+            }
+          }
+        }
+
+        ListBoxRow {
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+            margin-start: 6;
+            margin-end: 6;
+            margin-top: 6;
+            margin-bottom: 6;
+
+            Image {
+              icon-name: "folder-download-symbolic";
+              pixel-size: 24;
+            }
+            Label { 
+              label: "Downloads";
+              halign: start;
+            }
+          }
+        }
+
+        ListBoxRow {
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+            margin-start: 6;
+            margin-end: 6;
+            margin-top: 6;
+            margin-bottom: 6;
+
+            Image {
+              icon-name: "folder-pictures-symbolic";
+              pixel-size: 24;
+            }
+            Label { 
+              label: "Images";
+              halign: start;
+            }
+          }
+        }
+      }
+
+      // Supprimer le ListBox mount_list ici
+    }
+
+    // Main content area
+    Box {
+      orientation: vertical;
+      hexpand: true;
+      vexpand: true;
+
+      HeaderBar {
+        [start]
+        Button back_button {
+          icon-name: "go-previous-symbolic";
+          tooltip-text: "Go Back";
+        }
+
+        [title]
+        Entry current_directory {
+          hexpand: true;
+        }
+
+        [end]
+        Box {
+          orientation: horizontal;
+          spacing: 6;
+
+          Button view_mode_button {
+            icon-name: "view-grid-symbolic";
+            tooltip-text: "Switch to Grid View";
+          }
+
+          Button menu_button {
+            icon-name: "open-menu-symbolic";
+            tooltip-text: "Menu";
+          }
+        }
+      }
+
+      Stack view_stack {
+        vexpand: true;
+        hexpand: true;
+
+        StackPage {
+          name: "grid_view";
+          child: ScrolledWindow {
+            GridView grid_view {
+              styles ["file-grid"]
+              enable-rubberband: true;
+              single-click-activate: false;
+            }
+          };
+        }
+
+        StackPage {
+          name: "list_view";
+          child: ScrolledWindow {
+            ListView list_view {
+              styles ["file-list"]
+              enable-rubberband: true;
+              single-click-activate: false;
+            }
+          };
+        }
+      }
+    }
+  }
+}

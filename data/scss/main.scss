@@ -1,0 +1,47 @@
+$background-color: #ffffff;
+$text-color: #2e3436;
+$selected-color: #3584e4;
+
+// Dark theme colors
+$dark-text: #ffffff;
+$dark-hover: rgba(53, 132, 228, 0.1);  // Slight blue opacity
+$selected-color: #3584e4;
+
+.file-list, .file-grid {
+  background: transparent;
+  color: $dark-text;
+
+  row, flowboxchild {
+    padding: 8px;
+    border-radius: 6px;
+    margin: 2px;
+
+    &:selected {
+      background-color: $selected-color;
+      color: $dark-text;
+    }
+
+    &:hover:not(:selected) {
+      background-color: $dark-hover;  // Add slight blue opacity on hover
+    }
+  }
+}
+
+.headerbar {
+  background: transparent;
+  padding: 6px;
+}
+
+.grid-view {
+  background: transparent;
+  color: $dark-text;
+  
+  flowbox {
+    padding: 12px;
+  }
+}
+
+// Optional: Update ScrolledWindow background to match
+scrolledwindow {
+  background: transparent;
+}
