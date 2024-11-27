@@ -6,10 +6,8 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     // Variables
     public string namespace { get; set; }
     private FileActions factions = new FileActions();
-    private List<string> directory_history = new List<string>();
-    private int history_position = -1;  // Position actuelle dans l'historique
-    private const int MAX_HISTORY = 50;  // Taille maximum de l'historique
     private bool is_grid_view = true; // Affichage par défaut en GridView
+    private List<FileObject> dragged_files;
 
     // GTK Childs
     [GtkChild] private unowned Entry current_directory;
@@ -50,6 +48,14 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
         // Set initial view
         view_stack.set_visible_child_name("grid_view");
+
+        // Set up drag sources
+        setup_drag_source(grid_view);
+        setup_drag_source(list_view);
+
+        // Set up drag destinations
+        setup_drag_dest(grid_view);
+        setup_drag_dest(list_view);
 
     }
 
@@ -94,7 +100,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                 if (absolute_path != null && FileUtils.test(absolute_path, FileTest.IS_DIR)) {
                     navigate_to(absolute_path);
                 }
-            } catch (Error e) {
+            } catch (GLib.Error e) {
                 print("Error resolving path: %s\n", e.message);
             }
         } else if (keyval == 65289) { // Tab key
@@ -184,47 +190,33 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     }
 
     private void navigate_to(string path) {
-        // Éviter d'ajouter le même chemin deux fois de suite
         if (current_directory.text == path) {
             return;
         }
 
-        // Ajouter le nouveau chemin à l'historique
-        if (directory_history.length() >= MAX_HISTORY) {
-            directory_history.remove(directory_history.nth_data(0));  // Utiliser nth_data(0) au lieu de first()
-            history_position--;
-        }
-
-        // Si on est au milieu de l'historique, supprimer tout ce qui suit
-        if (history_position >= 0 && history_position < (int)(directory_history.length() - 1)) {  // Cast en int
-            for (int i = (int)(directory_history.length() - 1); i > history_position; i--) {  // Cast en int
-                string item_to_remove = directory_history.nth_data(i);
-                directory_history.remove(item_to_remove);
-            }
-        }
-
-        directory_history.append(path);
-        history_position = (int)directory_history.length() - 1;
-
-        // Mettre à jour le chemin et l'affichage
         current_directory.text = path;
         _directory(path);
-
-        // Activer/désactiver le bouton retour
-        back_button.sensitive = history_position > 0;
+        
+        // Activer le bouton retour puisqu'on peut maintenant revenir en arrière
+        back_button.sensitive = (path != "/");
     }
 
     private void go_back() {
-        if (history_position > 0) {
-            history_position--;
-            string previous_path = directory_history.nth_data(history_position);
-            
-            current_directory.text = previous_path;
-            _directory(previous_path);
+        string current_path = current_directory.text;
+        
+        // Si on est à la racine ou que le chemin est invalide, on ne fait rien
+        if (current_path == "/" || current_path == "") {
+            return;
+        }
 
-            // Mettre à jour la sensibilité du bouton retour
-            back_button.sensitive = history_position > 0;
+        // Obtenir le chemin parent
+        string parent_path = Path.get_dirname(current_path);
+        if (parent_path != current_path) {
+            current_directory.text = parent_path;
+            _directory(parent_path);
             
+            // Activer/désactiver le bouton retour en fonction de si on est à la racine
+            back_button.sensitive = (parent_path != "/");
         }
     }
 
@@ -493,5 +485,181 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
             // Change this line
             view_stack.set_visible_child_name("list_view");
         }
+    }
+
+    private void setup_drag_source(Gtk.Widget view) {
+        var drag_source = new Gtk.DragSource();
+        drag_source.actions = Gdk.DragAction.COPY | Gdk.DragAction.MOVE;
+
+        drag_source.prepare.connect((source, x, y) => {
+            var selection_model = (view == grid_view ? grid_view.model : list_view.model) as Gtk.MultiSelection;
+            if (selection_model == null) return null;
+
+            dragged_files = new List<FileObject>();
+            var selected = selection_model.get_selection();
+            
+            for (uint i = 0; i < selected.get_size(); i++) {
+                uint position = selected.get_nth(i);
+                var file_obj = selection_model.get_item(position) as FileObject;
+                if (file_obj != null) {
+                    dragged_files.append(file_obj);
+                }
+            }
+
+            if (dragged_files.length() == 0) return null;
+
+            // Create a simple icon for dragging
+            string icon_name = dragged_files.length() == 1 ? 
+                (dragged_files.data.is_folder ? "folder" : "text-x-generic") : 
+                "folder";
+
+            try {
+                var icon_theme = Gtk.IconTheme.get_for_display(get_display());
+                Gtk.IconPaintable paintable = icon_theme.lookup_icon(
+                    icon_name,
+                    null,
+                    32,
+                    1,
+                    Gtk.TextDirection.NONE,
+                    Gtk.IconLookupFlags.PRELOAD
+                );
+                
+                source.set_icon(paintable, 16, 16);
+            } catch (Error e) {
+                print("Error setting drag icon: %s\n", e.message);
+            }
+
+            var builder = new GLib.StringBuilder();
+            foreach (var file_obj in dragged_files) {
+                string file_path = Path.build_filename(current_directory.text, file_obj.name);
+                builder.append("file://");
+                builder.append(file_path);
+                builder.append("\n");
+            }
+
+            return new Gdk.ContentProvider.for_value(builder.str);
+        });
+
+        drag_source.end.connect((source) => {
+            dragged_files = null;
+        });
+
+        view.add_controller(drag_source);
+    }
+
+    private void setup_drag_dest(Gtk.Widget view) {
+        Gtk.DropTarget drag_dest = new Gtk.DropTarget(GLib.Type.STRING, Gdk.DragAction.COPY | Gdk.DragAction.MOVE);
+
+        drag_dest.drop.connect((target, value, x, y) => {
+            if (value.type() != GLib.Type.STRING) {
+                print("Error: Value does not hold a string\n");
+                return false;
+            }
+
+            string uri_list = (string)value;
+            string[] uris = uri_list.strip().split("\n");
+
+            // Get the target item at the drop coordinates
+            FileObject? target_file = null;
+
+            if (view == grid_view) {
+                var native = view.get_native();
+                if (native != null) {
+                    double view_x = x;
+                    double view_y = y;
+                    double dx, dy;
+                    native.get_surface_transform(out dx, out dy);
+                    view_x -= dx;
+                    view_y -= dy;
+
+                    // Get the item at the drop position using modern width/height methods
+                    int width = view.get_width();
+                    int height = view.get_height();
+                    if (view_x >= 0 && view_x < width && view_y >= 0 && view_y < height) {
+                        int cell_width = 120;
+                        int cell_height = 120;
+                        uint col = (uint)(view_x / cell_width);
+                        uint row = (uint)(view_y / cell_height);
+                        uint position = row * grid_view.max_columns + col;
+
+                        var selection_model = grid_view.model as Gtk.MultiSelection;
+                        if (selection_model != null && position < selection_model.get_n_items()) {
+                            target_file = selection_model.get_item(position) as FileObject;
+                        }
+                    }
+                }
+            } else {
+                // Handle ListView drop
+                int height = view.get_height();
+                if (y >= 0 && y < height) {
+                    int item_height = 40;
+                    uint position = (uint)(y / item_height);
+                    
+                    var selection_model = list_view.model as Gtk.MultiSelection;
+                    if (selection_model != null && position < selection_model.get_n_items()) {
+                        target_file = selection_model.get_item(position) as FileObject;
+                    }
+                }
+            }
+
+            // Set target path based on target file
+            string target_path;
+            if (target_file != null && target_file.is_folder) {
+                target_path = Path.build_filename(current_directory.text, target_file.name);
+            } else {
+                target_path = current_directory.text;
+            }
+
+            // Process the URIs
+            foreach (string uri in uris) {
+                if (uri == "") continue;
+                string source_path = Uri.unescape_string(uri.replace("file://", ""));
+                if (source_path == null) continue;
+
+                string file_name = Path.get_basename(source_path);
+                string destination_path = Path.build_filename(target_path, file_name);
+
+                try {
+                    var source_file = File.new_for_path(source_path);
+                    var destination_file = File.new_for_path(destination_path);
+
+                    // Check if source exists
+                    if (!source_file.query_exists()) {
+                        show_error_dialog("Error", "Source file does not exist: %s".printf(source_path));
+                        continue;
+                    }
+
+                    // Check if destination exists
+                    if (destination_file.query_exists()) {
+                        show_error_dialog("Error", "File already exists at destination: %s".printf(destination_path));
+                        continue;
+                    }
+
+                    // Try to move the file
+                    if (!source_file.move(destination_file, FileCopyFlags.NONE)) {
+                        show_error_dialog("Error", "Failed to move file: %s".printf(source_path));
+                    } else {
+                        // Refresh both source and destination directories if they're different
+                        _directory(current_directory.text);
+                        if (target_path != current_directory.text) {
+                            _directory(target_path);
+                        }
+                    }
+                } catch (GLib.Error e) {
+                    show_error_dialog("Error", "Error moving file: %s".printf(e.message));
+                }
+            }
+
+            return true;
+        });
+
+        view.add_controller(drag_dest);
+    }
+
+    private void show_error_dialog(string title, string message) {
+        var dialog = new Gtk.AlertDialog(message);
+        // dialog.title = title;
+        dialog.buttons = new string[]{ "OK" };
+        dialog.show(this);
     }
 }
