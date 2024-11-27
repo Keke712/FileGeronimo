@@ -5,6 +5,7 @@ source_files = [
     'Utils/FileActions.vala',
     'Utils/FileObject.vala',
     'Utils/Thumbnail.vala',
+    'Utils/ThumbnailCache.vala',
     'Utils/Layer.vala',
     'Utils/Daemon.vala',
 ]

@@ -1,9 +1,20 @@
-
 public class Thumbnail : Object {
     private const int THUMBNAIL_SIZE = 128;
 
     public static Gdk.Texture? create_thumbnail(string file_path) {
         if (!is_image_file(file_path)) {
+            return null;
+        }
+
+        // Vérifier d'abord le cache
+        var cache = ThumbnailCache.get_instance();
+        var cached_texture = cache.get_texture(file_path);
+        if (cached_texture != null) {
+            return cached_texture;
+        }
+
+        // Si le fichier n'existe pas, retourner null directement
+        if (!FileUtils.test(file_path, FileTest.EXISTS)) {
             return null;
         }
 
@@ -27,6 +38,9 @@ public class Thumbnail : Object {
             // Create scaled texture
             var pixbuf = new Gdk.Pixbuf.from_file_at_scale(file_path, new_width, new_height, true);
             Gdk.Texture scaled_texture = Gdk.Texture.for_pixbuf(pixbuf);
+
+            // Ajouter au cache avant de retourner
+            cache.set_texture(file_path, scaled_texture);
             return scaled_texture;
         } catch (Error e) {
             print("Error creating thumbnail for %s: %s\n", file_path, e.message);
