@@ -45,3 +45,21 @@ $selected-color: #3584e4;
 scrolledwindow {
   background: transparent;
 }
+
+.drag-icon {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: rgba(53, 132, 228, 0.9);  // More opaque blue
+  color: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  
+  image {
+    -gtk-icon-size: 32px;
+    margin-right: 8px;
+  }
+  
+  label {
+    color: white;
+    font-weight: bold;
+  }
+}
