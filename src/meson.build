@@ -1,6 +1,7 @@
 source_files = [
     'App.vala',
     'FileExplorer.vala',
+    'ActionHistory.vala',
 
     'Utils/FileActions.vala',
     'Utils/FileObject.vala',
@@ -8,6 +9,7 @@ source_files = [
     'Utils/ThumbnailCache.vala',
     'Utils/Layer.vala',
     'Utils/Daemon.vala',
+    'Utils/FileMonitor.vala',
 ]
 
 executable(

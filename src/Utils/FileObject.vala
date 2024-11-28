@@ -1,27 +1,11 @@
 public class FileObject : Object {
-    private string _name;
-    private bool _is_folder;
-    private DateTime _date;
+    public string name { get; set; }
+    public bool is_folder { get; set; }
+    public DateTime date { get; set; }
 
-    public string name {
-        get { return _name; }
-        set { _name = value; }
-    }
-
-    public bool is_folder {
-        get { return _is_folder; }
-        set { _is_folder = value; }
-    }
-
-    public DateTime date {
-        get { return _date; }
-        set { _date = value; }
-    }
-
-    // Default constructor
-    public FileObject() {
-        _name = "";
-        _is_folder = false;
-        _date = new DateTime.now_local();
+    public FileObject(string name = "", bool is_folder = false, DateTime? date = null) {
+        this.name = name;
+        this.is_folder = is_folder;
+        this.date = date ?? new DateTime.now_local();
     }
 }

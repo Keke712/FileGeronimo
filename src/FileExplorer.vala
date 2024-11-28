@@ -3,11 +3,21 @@ using Gtk;
 
 [GtkTemplate (ui = "/com/github/Keke712/fgeronimo/ui/FileExplorer.ui")]
 public class FileExplorer : Gtk.Window, ILayerWindow {
+    // Dimensions et espacement
+    private const int CELL_WIDTH = 120;
+    private const int CELL_HEIGHT = 120;
+    private const int CELL_SPACING = 6;
+    private const int LIST_ITEM_HEIGHT = 40;
+    private const int LIST_ITEM_SPACING = 2;
+
     // Variables
     public string namespace { get; set; }
     private FileActions factions = new FileActions();
     private bool is_grid_view = true; // Affichage par défaut en GridView
     private List<FileObject> dragged_files;
+    private ActionHistory action_history;
+    private FileMonitor file_monitor;
+    private string current_monitored_path;
 
     // GTK Childs
     [GtkChild] private unowned Entry current_directory;
@@ -17,6 +27,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     [GtkChild] private unowned Button back_button;
     [GtkChild] private unowned ListBox important_folders_list;
     [GtkChild] private unowned Button view_mode_button;
+    [GtkChild] private unowned Button undo_button;
 
     // Construct
     public FileExplorer (Gtk.Application app) {
@@ -24,6 +35,9 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         
         // Initialize thumbnail system
         Thumbnail.init();
+        
+        // Initialiser le FileMonitor avant toute utilisation
+        file_monitor = FileMonitor.get_instance();
         
         // Configure GridView
         grid_view.set_enable_rubberband(true);
@@ -59,6 +73,19 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         // Set up drag destinations
         setup_drag_dest(grid_view);
         setup_drag_dest(list_view);
+
+        // Initialiser l'historique
+        action_history = new ActionHistory();
+        action_history.history_changed.connect(() => {
+            undo_button.sensitive = action_history.can_undo;
+        });
+        
+        // Connecter le signal du bouton undo
+        undo_button.clicked.connect(() => {
+            if (action_history.undo_last_action()) {
+                _directory(current_directory.text);
+            }
+        });
 
     }
 
@@ -282,6 +309,11 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
     // Directory Listing Method
     public void _directory(string path) {
+        // Arrêter la surveillance de l'ancien dossier
+        if (current_monitored_path != null) {
+            file_monitor.unwatch_directory(current_monitored_path, this);
+        }
+
         // Obtenir la liste des fichiers
         var list = factions.list_files(path);
 
@@ -300,11 +332,11 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
             grid_factory.setup.connect((item) => {
                 var list_item = item as Gtk.ListItem;
-                var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 6) {
-                    margin_start = 6,
-                    margin_end = 6,
-                    width_request = 120,
-                    height_request = 120
+                var box = new Gtk.Box(Gtk.Orientation.VERTICAL, CELL_SPACING) {
+                    margin_start = CELL_SPACING,
+                    margin_end = CELL_SPACING,
+                    width_request = CELL_WIDTH,
+                    height_request = CELL_HEIGHT
                 };
                 
                 var icon = new Gtk.Image() {
@@ -489,6 +521,16 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
             // Change this line
             view_stack.set_visible_child_name("list_view");
         }
+
+        // Commencer à surveiller le nouveau dossier
+        current_monitored_path = path;
+        file_monitor.watch_directory(path, this);
+    }
+
+    public void refresh_current_directory() {
+        if (current_directory?.text != null) {
+            _directory(current_directory.text);
+        }
     }
 
     private void setup_drag_source(Gtk.Widget view) {
@@ -565,48 +607,37 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
             // Get the target item at the drop coordinates
             FileObject? target_file = null;
-
+            var selection_model = (view == grid_view ? grid_view.model : list_view.model) as Gtk.MultiSelection;
+            
             if (view == grid_view) {
                 // Convertir les coordonnées globales en coordonnées relatives à la vue
-                double view_x = x;
-                double view_y = y;
-                
-                // Obtenir les dimensions de la cellule
-                int cell_width = 120;  // Largeur de la cellule
-                int cell_height = 120; // Hauteur de la cellule
-                int spacing = 6;       // Espacement entre les cellules
-
-                // Ajuster les coordonnées en tenant compte du défilement
                 var adjustment = ((ScrolledWindow)grid_view.parent).vadjustment;
-                view_y += adjustment.value;
-
-                // Calculer l'index de la cellule
-                uint col = (uint)((view_x - spacing) / (cell_width + spacing));
-                uint row = (uint)((view_y - spacing) / (cell_height + spacing));
-
-                // Vérifier si nous sommes dans les limites d'une cellule
-                double cell_x = view_x - (col * (cell_width + spacing));
-                double cell_y = view_y - (row * (cell_height + spacing));
-
-                if (cell_x >= 0 && cell_x < cell_width && 
-                    cell_y >= 0 && cell_y < cell_height) {
-                    uint position = row * grid_view.max_columns + col;
-                    var selection_model = grid_view.model as Gtk.MultiSelection;
-                    if (selection_model != null && position < selection_model.get_n_items()) {
-                        target_file = selection_model.get_item(position) as FileObject;
-                    }
+                double scrolled_y = y + adjustment.value;
+                
+                // Calculer le nombre total d'éléments visibles par ligne
+                double visible_width = grid_view.get_width();
+                int items_per_row = (int)(visible_width / (CELL_WIDTH + CELL_SPACING));
+                if (items_per_row < 1) items_per_row = 1;
+                
+                // Calculer la position dans la grille
+                int col = (int)(x / (CELL_WIDTH + CELL_SPACING));
+                int row = (int)(scrolled_y / (CELL_HEIGHT + CELL_SPACING));
+                
+                // Calculer l'index dans le modèle
+                uint position = (uint)(row * items_per_row + col);
+                
+                // Vérifier si la position est valide
+                if (selection_model != null && position < selection_model.get_n_items()) {
+                    target_file = selection_model.get_item(position) as FileObject;
                 }
             } else {
                 // Amélioration pour la ListView
                 var adjustment = ((ScrolledWindow)list_view.parent).vadjustment;
                 double scrolled_y = y + adjustment.value;
                 
-                int item_height = 40; // Hauteur approximative d'un élément
-                int spacing = 2;      // Espacement entre les éléments
+                uint position = (uint)(scrolled_y / (LIST_ITEM_HEIGHT + LIST_ITEM_SPACING));
                 
-                uint position = (uint)(scrolled_y / (item_height + spacing));
-                
-                var selection_model = list_view.model as Gtk.MultiSelection;
+                // Remove the redundant selection_model declaration and use the one from above
                 if (selection_model != null && position < selection_model.get_n_items()) {
                     target_file = selection_model.get_item(position) as FileObject;
                 }
@@ -649,11 +680,13 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                     if (!source_file.move(destination_file, FileCopyFlags.NONE)) {
                         show_error_dialog("Error", "Failed to move file: %s".printf(source_path));
                     } else {
-                        // Refresh both source and destination directories if they're different
                         _directory(current_directory.text);
-                        if (target_path != current_directory.text) {
-                            _directory(target_path);
-                        }
+                        // Record the action with correct paths
+                        action_history.add_action(new FileAction(
+                            FileAction.ActionType.MOVE,
+                            source_path,
+                            destination_path
+                        ));
                     }
                 } catch (GLib.Error e) {
                     show_error_dialog("Error", "Error moving file: %s".printf(e.message));
@@ -671,5 +704,12 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         // dialog.title = title;
         dialog.buttons = new string[]{ "OK" };
         dialog.show(this);
+    }
+
+    // Ajouter dans le destructeur pour nettoyer la surveillance
+    ~FileExplorer() {
+        if (current_monitored_path != null) {
+            file_monitor.unwatch_directory(current_monitored_path, this);
+        }
     }
 }

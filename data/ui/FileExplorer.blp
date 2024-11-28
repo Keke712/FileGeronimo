@@ -19,6 +19,13 @@ template $FileExplorer : Gtk.Window {
         tooltip-text: "Go Back";
       }
 
+      [start]
+      Button undo_button {
+        sensitive: false;
+        icon-name: "edit-undo-symbolic";
+        tooltip-text: "Undo last action";
+      }
+
       [title]
       Entry current_directory {
         hexpand: true;
