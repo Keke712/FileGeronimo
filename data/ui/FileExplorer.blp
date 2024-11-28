@@ -10,163 +10,165 @@ template $FileExplorer : Gtk.Window {
   }
 
   Box {
-    orientation: horizontal;
+    orientation: vertical;
 
-    // Sidebar with important folders
-    Box {
-      orientation: vertical;
-      spacing: 6;
-      margin-end: 12;
-      margin-start: 12;
-      margin-top: 12;
-      width-request: 200;
-
-      ListBox important_folders_list {
-        selection-mode: single;
-
-        ListBoxRow {
-          Box {
-            orientation: horizontal;
-            spacing: 12;
-            margin-start: 6;
-            margin-end: 6;
-            margin-top: 6;
-            margin-bottom: 6;
-
-            Image {
-              icon-name: "user-home-symbolic";
-              pixel-size: 24;
-            }
-            Label { 
-              label: "Home";
-              halign: start;
-            }
-          }
-        }
-
-        ListBoxRow {
-          Box {
-            orientation: horizontal;
-            spacing: 12;
-            margin-start: 6;
-            margin-end: 6;
-            margin-top: 6;
-            margin-bottom: 6;
-
-            Image {
-              icon-name: "folder-documents-symbolic";
-              pixel-size: 24;
-            }
-            Label { 
-              label: "Documents";
-              halign: start;
-            }
-          }
-        }
-
-        ListBoxRow {
-          Box {
-            orientation: horizontal;
-            spacing: 12;
-            margin-start: 6;
-            margin-end: 6;
-            margin-top: 6;
-            margin-bottom: 6;
-
-            Image {
-              icon-name: "folder-download-symbolic";
-              pixel-size: 24;
-            }
-            Label { 
-              label: "Downloads";
-              halign: start;
-            }
-          }
-        }
-
-        ListBoxRow {
-          Box {
-            orientation: horizontal;
-            spacing: 12;
-            margin-start: 6;
-            margin-end: 6;
-            margin-top: 6;
-            margin-bottom: 6;
-
-            Image {
-              icon-name: "folder-pictures-symbolic";
-              pixel-size: 24;
-            }
-            Label { 
-              label: "Images";
-              halign: start;
-            }
-          }
-        }
+    HeaderBar {
+      [start]
+      Button back_button {
+        icon-name: "go-previous-symbolic";
+        tooltip-text: "Go Back";
       }
 
-      // Supprimer le ListBox mount_list ici
+      [title]
+      Entry current_directory {
+        hexpand: true;
+      }
+
+      [end]
+      Box {
+        orientation: horizontal;
+        spacing: 6;
+
+        Button view_mode_button {
+          icon-name: "view-grid-symbolic";
+          tooltip-text: "Switch to Grid View";
+        }
+
+        Button menu_button {
+          icon-name: "open-menu-symbolic";
+          tooltip-text: "Menu";
+        }
+      }
     }
 
-    // Main content area
     Box {
-      orientation: vertical;
-      hexpand: true;
-      vexpand: true;
+      orientation: horizontal;
 
-      HeaderBar {
-        [start]
-        Button back_button {
-          icon-name: "go-previous-symbolic";
-          tooltip-text: "Go Back";
-        }
+      // Sidebar with important folders
+      Box {
+        orientation: vertical;
+        spacing: 6;
+        margin-end: 12;
+        margin-start: 12;
+        margin-top: 12;
+        width-request: 200;
 
-        [title]
-        Entry current_directory {
-          hexpand: true;
-        }
+        ListBox important_folders_list {
+          selection-mode: single;
 
-        [end]
-        Box {
-          orientation: horizontal;
-          spacing: 6;
+          ListBoxRow {
+            Box {
+              orientation: horizontal;
+              spacing: 12;
+              margin-start: 6;
+              margin-end: 6;
+              margin-top: 6;
+              margin-bottom: 6;
 
-          Button view_mode_button {
-            icon-name: "view-grid-symbolic";
-            tooltip-text: "Switch to Grid View";
+              Image {
+                icon-name: "user-home-symbolic";
+                pixel-size: 24;
+              }
+              Label { 
+                label: "Home";
+                halign: start;
+              }
+            }
           }
 
-          Button menu_button {
-            icon-name: "open-menu-symbolic";
-            tooltip-text: "Menu";
+          ListBoxRow {
+            Box {
+              orientation: horizontal;
+              spacing: 12;
+              margin-start: 6;
+              margin-end: 6;
+              margin-top: 6;
+              margin-bottom: 6;
+
+              Image {
+                icon-name: "folder-documents-symbolic";
+                pixel-size: 24;
+              }
+              Label { 
+                label: "Documents";
+                halign: start;
+              }
+            }
+          }
+
+          ListBoxRow {
+            Box {
+              orientation: horizontal;
+              spacing: 12;
+              margin-start: 6;
+              margin-end: 6;
+              margin-top: 6;
+              margin-bottom: 6;
+
+              Image {
+                icon-name: "folder-download-symbolic";
+                pixel-size: 24;
+              }
+              Label { 
+                label: "Downloads";
+                halign: start;
+              }
+            }
+          }
+
+          ListBoxRow {
+            Box {
+              orientation: horizontal;
+              spacing: 12;
+              margin-start: 6;
+              margin-end: 6;
+              margin-top: 6;
+              margin-bottom: 6;
+
+              Image {
+                icon-name: "folder-pictures-symbolic";
+                pixel-size: 24;
+              }
+              Label { 
+                label: "Images";
+                halign: start;
+              }
+            }
           }
         }
       }
 
-      Stack view_stack {
-        vexpand: true;
+      // Main content area
+      Box {
+        orientation: vertical;
         hexpand: true;
+        vexpand: true;
 
-        StackPage {
-          name: "grid_view";
-          child: ScrolledWindow {
-            GridView grid_view {
-              styles ["file-grid"]
-              enable-rubberband: true;
-              single-click-activate: false;
-            }
-          };
-        }
+        Stack view_stack {
+          vexpand: true;
+          hexpand: true;
 
-        StackPage {
-          name: "list_view";
-          child: ScrolledWindow {
-            ListView list_view {
-              styles ["file-list"]
-              enable-rubberband: true;
-              single-click-activate: false;
-            }
-          };
+          StackPage {
+            name: "grid_view";
+            child: ScrolledWindow {
+              GridView grid_view {
+                styles ["file-grid"]
+                enable-rubberband: true;
+                single-click-activate: false;
+              }
+            };
+          }
+
+          StackPage {
+            name: "list_view";
+            child: ScrolledWindow {
+              ListView list_view {
+                styles ["file-list"]
+                enable-rubberband: true;
+                single-click-activate: false;
+              }
+            };
+          }
         }
       }
     }
