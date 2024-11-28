@@ -1,25 +1,73 @@
 public class Thumbnail : Object {
     private const int THUMBNAIL_SIZE = 128;
+    private static AsyncQueue<ThumbnailRequest?>? request_queue = null;
+    private static Thread<void>? worker_thread = null;
+    private static bool worker_running = false;
+    private static bool is_initialized = false;
 
-    public static Gdk.Texture? create_thumbnail(string file_path) {
+    public delegate void ThumbnailCallback(Gdk.Texture? texture);
+
+    public static void init() {
+        if (is_initialized) return;
+        
+        request_queue = new AsyncQueue<ThumbnailRequest?>();
+        worker_running = true;
+        try {
+            worker_thread = new Thread<void>("thumbnail-worker", () => {
+                while (worker_running) {
+                    var request = request_queue.pop();
+                    if (request != null) {
+                        process_thumbnail_request(request);
+                    }
+                }
+            });
+            is_initialized = true;
+        } catch (Error e) {
+            warning("Failed to create thumbnail worker thread: %s", e.message);
+        }
+    }
+
+    public static void request_thumbnail(string file_path, owned ThumbnailCallback callback) {
+        // Initialiser si ce n'est pas déjà fait
+        if (!is_initialized) {
+            init();
+        }
+
+        if (request_queue == null) {
+            warning("Thumbnail system not initialized");
+            callback(null);
+            return;
+        }
+
         if (!is_image_file(file_path)) {
-            return null;
+            callback(null);
+            return;
         }
 
         // Vérifier d'abord le cache
         var cache = ThumbnailCache.get_instance();
         var cached_texture = cache.get_texture(file_path);
         if (cached_texture != null) {
-            return cached_texture;
+            callback(cached_texture);
+            return;
         }
 
-        // Si le fichier n'existe pas, retourner null directement
-        if (!FileUtils.test(file_path, FileTest.EXISTS)) {
-            return null;
+        // Ajouter la requête à la file d'attente de manière sécurisée
+        var request = new ThumbnailRequest(file_path, (owned)callback);
+        request_queue.push(request);
+    }
+
+    private static void process_thumbnail_request(ThumbnailRequest request) {
+        if (!FileUtils.test(request.file_path, FileTest.EXISTS)) {
+            Idle.add(() => {
+                request.callback(null);
+                return false;
+            });
+            return;
         }
 
         try {
-            var file = File.new_for_path(file_path);
+            var file = File.new_for_path(request.file_path);
             var texture = Gdk.Texture.from_file(file);
             
             // Calculate new dimensions maintaining aspect ratio
@@ -35,16 +83,23 @@ public class Thumbnail : Object {
                 new_width = (int)((double)orig_width / orig_height * THUMBNAIL_SIZE);
             }
 
-            // Create scaled texture
-            var pixbuf = new Gdk.Pixbuf.from_file_at_scale(file_path, new_width, new_height, true);
-            Gdk.Texture scaled_texture = Gdk.Texture.for_pixbuf(pixbuf);
+            var pixbuf = new Gdk.Pixbuf.from_file_at_scale(request.file_path, new_width, new_height, true);
+            var scaled_texture = Gdk.Texture.for_pixbuf(pixbuf);
 
-            // Ajouter au cache avant de retourner
-            cache.set_texture(file_path, scaled_texture);
-            return scaled_texture;
+            // Mettre en cache
+            var cache = ThumbnailCache.get_instance();
+            cache.set_texture(request.file_path, scaled_texture);
+
+            // Retourner sur le thread principal pour le callback
+            Idle.add(() => {
+                request.callback(scaled_texture);
+                return false;
+            });
         } catch (Error e) {
-            print("Error creating thumbnail for %s: %s\n", file_path, e.message);
-            return null;
+            Idle.add(() => {
+                request.callback(null);
+                return false;
+            });
         }
     }
 
@@ -55,5 +110,37 @@ public class Thumbnail : Object {
                lower_path.has_suffix(".png") || 
                lower_path.has_suffix(".gif") || 
                lower_path.has_suffix(".webp");
+    }
+
+    public static void cleanup() {
+        if (is_initialized && worker_running && request_queue != null) {
+            worker_running = false;
+            
+            // Créer une requête vide pour réveiller le thread au lieu de pousser null
+            var empty_request = new ThumbnailRequest("", (texture) => {});
+            request_queue.push(empty_request);
+
+            if (worker_thread != null) {
+                try {
+                    worker_thread.join();
+                } catch (Error e) {
+                    warning("Failed to join thumbnail worker thread: %s", e.message);
+                }
+            }
+
+            request_queue = null;
+            worker_thread = null;
+            is_initialized = false;
+        }
+    }
+}
+
+private class ThumbnailRequest {
+    public string file_path;
+    public Thumbnail.ThumbnailCallback callback;
+
+    public ThumbnailRequest(string path, owned Thumbnail.ThumbnailCallback cb) {
+        file_path = path;
+        callback = (owned)cb;
     }
 }

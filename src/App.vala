@@ -128,4 +128,9 @@ public class FGeronimo : Gtk.Application {
         activate ();
         return 0;
     }
+
+    public override void shutdown() {
+        Thumbnail.cleanup();
+        base.shutdown();
+    }
 }

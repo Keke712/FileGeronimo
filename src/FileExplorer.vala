@@ -22,6 +22,9 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     public FileExplorer (Gtk.Application app) {
         Object (application: app);
         
+        // Initialize thumbnail system
+        Thumbnail.init();
+        
         // Configure GridView
         grid_view.set_enable_rubberband(true);
         grid_view.max_columns = 5;  // Fixed number of columns
@@ -353,26 +356,27 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                             string name_lower = file.name.down();
                             string full_path = Path.build_filename(current_directory.text, file.name);
                             
-                            // Try to create thumbnail for images
-                            var thumbnail = Thumbnail.create_thumbnail(full_path);
-                            if (thumbnail != null) {
-                                icon.set_from_paintable(thumbnail);
+                            // Set default icon first
+                            if (name_lower.has_suffix(".jpg") || 
+                                name_lower.has_suffix(".jpeg") || 
+                                name_lower.has_suffix(".png") || 
+                                name_lower.has_suffix(".gif") || 
+                                name_lower.has_suffix(".webp")) {
+                                icon.icon_name = "image-x-generic";
+                                
+                                // Request thumbnail asynchronously
+                                Thumbnail.request_thumbnail(full_path, (texture) => {
+                                    if (texture != null) {
+                                        icon.set_from_paintable(texture);
+                                    }
+                                });
+                            } else if (name_lower.has_suffix(".mp4") || 
+                                    name_lower.has_suffix(".mkv") || 
+                                    name_lower.has_suffix(".avi") || 
+                                    name_lower.has_suffix(".webm")) {
+                                icon.icon_name = "video-x-generic";
                             } else {
-                                // Use default icons if thumbnail creation failed or for non-image files
-                                if (name_lower.has_suffix(".jpg") || 
-                                    name_lower.has_suffix(".jpeg") || 
-                                    name_lower.has_suffix(".png") || 
-                                    name_lower.has_suffix(".gif") || 
-                                    name_lower.has_suffix(".webp")) {
-                                    icon.icon_name = "image-x-generic";
-                                } else if (name_lower.has_suffix(".mp4") || 
-                                        name_lower.has_suffix(".mkv") || 
-                                        name_lower.has_suffix(".avi") || 
-                                        name_lower.has_suffix(".webm")) {
-                                    icon.icon_name = "video-x-generic";
-                                } else {
-                                    icon.icon_name = "text-x-generic";
-                                }
+                                icon.icon_name = "text-x-generic";
                             }
                         }
                     }
@@ -563,42 +567,48 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
             FileObject? target_file = null;
 
             if (view == grid_view) {
-                var native = view.get_native();
-                if (native != null) {
-                    double view_x = x;
-                    double view_y = y;
-                    double dx, dy;
-                    native.get_surface_transform(out dx, out dy);
-                    view_x -= dx;
-                    view_y -= dy;
+                // Convertir les coordonnées globales en coordonnées relatives à la vue
+                double view_x = x;
+                double view_y = y;
+                
+                // Obtenir les dimensions de la cellule
+                int cell_width = 120;  // Largeur de la cellule
+                int cell_height = 120; // Hauteur de la cellule
+                int spacing = 6;       // Espacement entre les cellules
 
-                    // Get the item at the drop position using modern width/height methods
-                    int width = view.get_width();
-                    int height = view.get_height();
-                    if (view_x >= 0 && view_x < width && view_y >= 0 && view_y < height) {
-                        int cell_width = 120;
-                        int cell_height = 120;
-                        uint col = (uint)(view_x / cell_width);
-                        uint row = (uint)(view_y / cell_height);
-                        uint position = row * grid_view.max_columns + col;
+                // Ajuster les coordonnées en tenant compte du défilement
+                var adjustment = ((ScrolledWindow)grid_view.parent).vadjustment;
+                view_y += adjustment.value;
 
-                        var selection_model = grid_view.model as Gtk.MultiSelection;
-                        if (selection_model != null && position < selection_model.get_n_items()) {
-                            target_file = selection_model.get_item(position) as FileObject;
-                        }
-                    }
-                }
-            } else {
-                // Handle ListView drop
-                int height = view.get_height();
-                if (y >= 0 && y < height) {
-                    int item_height = 40;
-                    uint position = (uint)(y / item_height);
-                    
-                    var selection_model = list_view.model as Gtk.MultiSelection;
+                // Calculer l'index de la cellule
+                uint col = (uint)((view_x - spacing) / (cell_width + spacing));
+                uint row = (uint)((view_y - spacing) / (cell_height + spacing));
+
+                // Vérifier si nous sommes dans les limites d'une cellule
+                double cell_x = view_x - (col * (cell_width + spacing));
+                double cell_y = view_y - (row * (cell_height + spacing));
+
+                if (cell_x >= 0 && cell_x < cell_width && 
+                    cell_y >= 0 && cell_y < cell_height) {
+                    uint position = row * grid_view.max_columns + col;
+                    var selection_model = grid_view.model as Gtk.MultiSelection;
                     if (selection_model != null && position < selection_model.get_n_items()) {
                         target_file = selection_model.get_item(position) as FileObject;
                     }
+                }
+            } else {
+                // Amélioration pour la ListView
+                var adjustment = ((ScrolledWindow)list_view.parent).vadjustment;
+                double scrolled_y = y + adjustment.value;
+                
+                int item_height = 40; // Hauteur approximative d'un élément
+                int spacing = 2;      // Espacement entre les éléments
+                
+                uint position = (uint)(scrolled_y / (item_height + spacing));
+                
+                var selection_model = list_view.model as Gtk.MultiSelection;
+                if (selection_model != null && position < selection_model.get_n_items()) {
+                    target_file = selection_model.get_item(position) as FileObject;
                 }
             }
 
