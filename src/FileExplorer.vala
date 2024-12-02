@@ -13,25 +13,29 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     // Variables
     public string namespace { get; set; }
     private FileActions factions = new FileActions();
-    private bool is_grid_view = true; // Affichage par défaut en GridView
+    public bool is_grid_view = true; // Affichage par défaut en GridView
     private List<FileObject> dragged_files;
-    private ActionHistory action_history;
+    public ActionHistory action_history;
     private FileMonitor file_monitor;
     private string current_monitored_path;
+    private EventListener event_listener;
 
     // GTK Childs
-    [GtkChild] private unowned Entry current_directory;
-    [GtkChild] private unowned Stack view_stack;      // Ajout du Stack
-    [GtkChild] private unowned GridView grid_view;    // GridView pour la vue grille
-    [GtkChild] private unowned ListView list_view;    // ListView pour la vue liste
-    [GtkChild] private unowned Button back_button;
-    [GtkChild] private unowned ListBox important_folders_list;
-    [GtkChild] private unowned Button view_mode_button;
-    [GtkChild] private unowned Button undo_button;
+    [GtkChild] public unowned Entry current_directory;
+    [GtkChild] public unowned Stack view_stack;      // Ajout du Stack
+    [GtkChild] public unowned GridView grid_view;    // GridView pour la vue grille
+    [GtkChild] public unowned ListView list_view;    // ListView pour la vue liste
+    [GtkChild] public unowned Button back_button;
+    [GtkChild] public unowned ListBox important_folders_list;
+    [GtkChild] public unowned Button view_mode_button;
+    [GtkChild] public unowned Button undo_button;
 
     // Construct
     public FileExplorer (Gtk.Application app) {
         Object (application: app);
+        
+        // Initialize event listener
+        event_listener = new EventListener(this);
         
         // Initialize thumbnail system
         Thumbnail.init();
@@ -109,92 +113,13 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
     [GtkCallback]
     public void key_released(uint keyval) {
-        if (keyval == 65293) { // Enter key
-            string entered_path = current_directory.get_text();
-            
-            // Convert to absolute path if relative
-            File file = File.new_for_path(entered_path);
-            string? absolute_path = null;
-            
-            try {
-                if (!Path.is_absolute(entered_path)) {
-                    // Handle relative paths by resolving them against current directory
-                    File current = File.new_for_path(current_directory.get_text());
-                    File resolved = current.resolve_relative_path(entered_path);
-                    absolute_path = resolved.get_path();
-                } else {
-                    absolute_path = file.get_path();
-                }
-
-                // Check if path exists and is a directory
-                if (absolute_path != null && FileUtils.test(absolute_path, FileTest.IS_DIR)) {
-                    navigate_to(absolute_path);
-                }
-            } catch (GLib.Error e) {
-                print("Error resolving path: %s\n", e.message);
-            }
-        } else if (keyval == 65289) { // Tab key
-            handle_tab_completion();
-        }
+        event_listener.handle_key_released(keyval);
     }
 
-    private void handle_tab_completion() {
-        string current_text = current_directory.text;
-        
-        // Get the directory and partial name to complete
-        string directory;
-        string partial_name;
-        
-        if (Path.is_absolute(current_text)) {
-            directory = Path.get_dirname(current_text);
-            partial_name = Path.get_basename(current_text);
-        } else {
-            directory = current_directory.text;
-            partial_name = "";
-        }
-        
-        // List all entries in the directory
-        try {
-            var dir = Dir.open(directory);
-            string? name = null;
-            string? match = null;
-            
-            while ((name = dir.read_name()) != null) {
-                // Skip hidden files
-                if (name.has_prefix(".")) {
-                    continue;
-                }
-                
-                // If the name starts with our partial text
-                if (name.down().has_prefix(partial_name.down())) {
-                    // If we haven't found a match yet, or this one is "better"
-                    if (match == null) {
-                        match = name;
-                    }
-                }
-            }
-            
-            // If we found a match, use it
-            if (match != null) {
-                string new_path;
-                if (Path.is_absolute(current_text)) {
-                    new_path = Path.build_filename(directory, match);
-                } else {
-                    new_path = match;
-                }
-                
-                // If it's a directory, add a trailing slash
-                string full_path = Path.build_filename(directory, match);
-                if (FileUtils.test(full_path, FileTest.IS_DIR)) {
-                    new_path += "/";
-                }
-                
-                current_directory.text = new_path;
-                current_directory.set_position(-1); // Place cursor at end
-            }
-        } catch (Error e) {
-            print("Error during tab completion: %s\n", e.message);
-        }
+    [GtkCallback]
+    public bool key_pressed(Gtk.EventControllerKey controller, uint keyval, uint keycode, Gdk.ModifierType state) {
+        event_listener.handle_key_pressed(keyval);
+        return false;
     }
 
     // Navigation Methods
@@ -219,7 +144,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         }
     }
 
-    private void navigate_to(string path) {
+    public void navigate_to(string path) {
         if (current_directory.text == path) {
             return;
         }
@@ -284,6 +209,9 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                 break;
             case "Images":
                 folder_path = GLib.Environment.get_user_special_dir(GLib.UserDirectory.PICTURES);
+                break;
+            case "Trash":
+                folder_path = Path.build_filename(GLib.Environment.get_user_data_dir(), "Trash/files");
                 break;
         }
 
@@ -710,6 +638,45 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     ~FileExplorer() {
         if (current_monitored_path != null) {
             file_monitor.unwatch_directory(current_monitored_path, this);
+        }
+    }
+
+    public string? find_matching_path(string partial_path) {
+        // If it's already a complete valid path, return it
+        if (FileUtils.test(partial_path, FileTest.EXISTS)) {
+            return partial_path;
+        }
+
+        // Get the directory and filename parts
+        string dir = Path.get_dirname(partial_path);
+        string filename = Path.get_basename(partial_path).down();
+        
+        // If the directory doesn't exist, try relative to current directory
+        if (!FileUtils.test(dir, FileTest.EXISTS)) {
+            dir = current_directory.text;
+            filename = partial_path.down();
+        }
+
+        try {
+            var directory = Dir.open(dir);
+            string? name = null;
+            string? best_match = null;
+
+            while ((name = directory.read_name()) != null) {
+                string name_lower = name.down();
+                if (name_lower.has_prefix(filename)) {
+                    string full_path = Path.build_filename(dir, name);
+                    best_match = full_path;
+                    // If we find an exact match, return it immediately
+                    if (name_lower == filename) {
+                        return full_path;
+                    }
+                }
+            }
+            return best_match;
+        } catch (Error e) {
+            print("Error searching directory: %s\n", e.message);
+            return null;
         }
     }
 }

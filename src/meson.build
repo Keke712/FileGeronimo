@@ -2,7 +2,8 @@ source_files = [
     'App.vala',
     'FileExplorer.vala',
     'ActionHistory.vala',
-
+    'EventListener.vala',
+    
     'Utils/FileActions.vala',
     'Utils/FileObject.vala',
     'Utils/Thumbnail.vala',

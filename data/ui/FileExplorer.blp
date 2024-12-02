@@ -7,6 +7,7 @@ template $FileExplorer : Gtk.Window {
 
   EventControllerKey {
     key-released => $key_released();
+    key-pressed => $key_pressed();
   }
 
   Box {
@@ -138,6 +139,26 @@ template $FileExplorer : Gtk.Window {
               }
               Label { 
                 label: "Images";
+                halign: start;
+              }
+            }
+          }
+
+          ListBoxRow {
+            Box {
+              orientation: horizontal;
+              spacing: 12;
+              margin-start: 6;
+              margin-end: 6;
+              margin-top: 6;
+              margin-bottom: 6;
+
+              Image {
+                icon-name: "user-trash-symbolic";
+                pixel-size: 24;
+              }
+              Label { 
+                label: "Trash";
                 halign: start;
               }
             }
