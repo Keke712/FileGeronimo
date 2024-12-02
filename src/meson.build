@@ -11,6 +11,7 @@ source_files = [
     'Utils/Layer.vala',
     'Utils/Daemon.vala',
     'Utils/FileMonitor.vala',
+    'Utils/ContextMenu.vala',
 ]
 
 executable(

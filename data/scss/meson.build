@@ -2,6 +2,7 @@ sass = find_program('sass')
 
 scss_deps = files(
     'main.scss',
+    'context.scss',
 )
 
 scss = custom_target(

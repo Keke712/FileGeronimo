@@ -19,6 +19,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     private FileMonitor file_monitor;
     private string current_monitored_path;
     private EventListener event_listener;
+    private ContextMenu context_menu;
 
     // GTK Childs
     [GtkChild] public unowned Entry current_directory;
@@ -95,6 +96,13 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         factions.cut_files_changed.connect(() => {
             refresh_current_directory();
         });
+
+        // Initialize context menu
+        context_menu = new ContextMenu(this);
+        
+        // Add right-click gesture to both views
+        setup_context_menu(grid_view);
+        setup_context_menu(list_view);
 
     }
 
@@ -646,6 +654,18 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         // dialog.title = title;
         dialog.buttons = new string[]{ "OK" };
         dialog.show(this);
+    }
+
+    private void setup_context_menu(Gtk.Widget view) {
+        var gesture = new Gtk.GestureClick() {
+            button = Gdk.BUTTON_SECONDARY
+        };
+        
+        gesture.pressed.connect((n_press, x, y) => {
+            context_menu.show_at_pointer(gesture.get_last_event(null));
+        });
+        
+        view.add_controller(gesture);
     }
 
     // Ajouter dans le destructeur pour nettoyer la surveillance

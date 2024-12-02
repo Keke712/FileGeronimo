@@ -1,0 +1,25 @@
+
+using Gtk 4.0;
+
+menu context_menu {
+  section {
+    item {
+      label: _("Cut");
+      action: "menu.cut";
+    }
+    item {
+      label: _("Copy");
+      action: "menu.copy";
+    }
+    item {
+      label: _("Paste");
+      action: "menu.paste";
+    }
+  }
+  section {
+    item {
+      label: _("Move to Trash");
+      action: "menu.delete";
+    }
+  }
+}

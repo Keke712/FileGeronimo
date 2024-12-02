@@ -3,5 +3,6 @@
     <gresource prefix="/com/github/Keke712/fgeronimo">
         <file>fgeronimo.css</file>
         <file preprocess="xml-stripblanks">ui/FileExplorer.ui</file>
+        <file preprocess="xml-stripblanks">ui/ContextMenu.ui</file>
     </gresource>
 </gresources>
