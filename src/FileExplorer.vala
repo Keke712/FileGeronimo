@@ -12,7 +12,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
     // Variables
     public string namespace { get; set; }
-    private FileActions factions = new FileActions();
+    public FileActions factions = new FileActions();
     public bool is_grid_view = true; // Affichage par défaut en GridView
     private List<FileObject> dragged_files;
     public ActionHistory action_history;
