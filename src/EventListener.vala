@@ -27,7 +27,7 @@ public class EventListener : Object {
                         }
                     }
                 } catch (Error e) {
-                    print("Error checking path: %s\n", e.message);
+                    explorer.show_error_dialog("Error checking path: %s".printf(e.message));
                 }
             }
             
@@ -68,7 +68,6 @@ public class EventListener : Object {
             handle_paste();
         } else if (ctrl_pressed && x_pressed) {
             cut_selected_items_opacity();
-            print("CTRL + X pressed\n");
         } else if (keyval == 65535) { // Delete key
             explorer.factions.move_selected_to_trash(explorer);
         }
@@ -76,7 +75,6 @@ public class EventListener : Object {
 
     private void cut_selected_items_opacity() {
         explorer.factions.cut_selected_files(explorer);
-        print("Selected files marked as cut\n");
     }
 
     public void handle_paste() {
@@ -139,7 +137,7 @@ public class EventListener : Object {
                 explorer.current_directory.set_position(-1); // Place cursor at end
             }
         } catch (Error e) {
-            print("Error during tab completion: %s\n", e.message);
+            explorer.show_error_dialog("Error during tab completion: %s".printf(e.message));
         }
     }
 }

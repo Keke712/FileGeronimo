@@ -53,7 +53,7 @@ public class FGeronimo : Gtk.Application {
             w.visible = !w.visible;
             return true;
         }
-        printerr (@"Window $name not found.\n");
+        print(@"Window $name not found.\n");
         return false;
     }
     

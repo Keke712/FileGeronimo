@@ -93,7 +93,7 @@ public class FileActions : Object {
                         trash_path
                     ));
                 } catch (Error e) {
-                    print("Error moving file to trash: %s\n", e.message);
+                    explorer.show_error_dialog("Error moving file to trash");
                 }
             }
         }
@@ -130,7 +130,7 @@ public class FileActions : Object {
 
     public void paste_copied_files(FileExplorer explorer) {
         if (copied_files.is_empty() && cut_files.is_empty()) {
-            print("No files to paste\n");
+            explorer.show_error_dialog("No files to paste");
             return;
         }
 
@@ -146,13 +146,13 @@ public class FileActions : Object {
 
                     // Check if source exists
                     if (!source_file.query_exists()) {
-                        print("Source file does not exist: %s\n", file_path);
+                        explorer.show_error_dialog("Source file does not exist");
                         continue;
                     }
 
                     // Check if destination exists
                     if (destination_file.query_exists()) {
-                        print("File already exists at destination: %s\n", destination_path);
+                        explorer.show_error_dialog("File already exists at destination");
                         continue;
                     }
 
@@ -166,7 +166,7 @@ public class FileActions : Object {
                         print("Moved file: %s to %s\n", file_path, destination_path);
                     }
                 } catch (Error e) {
-                    print("Error moving file: %s\n", e.message);
+                    explorer.show_error_dialog("Error moving file");
                 }
             }
             foreach (unowned string e in cut_files) {
@@ -187,7 +187,7 @@ public class FileActions : Object {
 
                 // Check if destination exists
                 if (destination_file.query_exists()) {
-                    print("File already exists at destination: %s\n", destination_path);
+                    explorer.show_error_dialog("File already exists at destination");
                     continue;
                 }
 
@@ -200,7 +200,7 @@ public class FileActions : Object {
                 ));
                 print("Copied file: %s to %s\n", file_path, destination_path);
             } catch (Error e) {
-                print("Error copying file: %s\n", e.message);
+                explorer.show_error_dialog("Error copying file");
             }
         }
 

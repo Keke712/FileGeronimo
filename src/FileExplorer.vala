@@ -30,6 +30,10 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     [GtkChild] public unowned ListBox important_folders_list;
     [GtkChild] public unowned Button view_mode_button;
     [GtkChild] public unowned Button undo_button;
+    [GtkChild] public unowned Box warning_box;
+    [GtkChild] public unowned Image warning_icon;
+    [GtkChild] public unowned Label warning_label;
+    [GtkChild] public unowned Button warning_close_button;
 
     // Construct
     public FileExplorer (Gtk.Application app) {
@@ -103,6 +107,10 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         // Add right-click gesture to both views
         setup_context_menu(grid_view);
         setup_context_menu(list_view);
+
+        warning_close_button.clicked.connect(() => {
+            warning_box.hide();
+        });
 
     }
 
@@ -231,7 +239,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         if (folder_path != null) {
             navigate_to(folder_path);
         } else {
-            print("Folder path not found for %s\n", folder_name);
+            show_error_dialog("Folder path not found for %s\n".printf(folder_name));
         }
     }
 
@@ -548,7 +556,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
         drag_dest.drop.connect((target, value, x, y) => {
             if (value.type() != GLib.Type.STRING) {
-                print("Error: Value does not hold a string\n");
+                show_error_dialog("Error: Value does not hold a string\n");
                 return false;
             }
 
@@ -616,19 +624,19 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
                     // Check if source exists
                     if (!source_file.query_exists()) {
-                        show_error_dialog("Error", "Source file does not exist: %s".printf(source_path));
+                        show_error_dialog("Source file does not exist: %s".printf(source_path));
                         continue;
                     }
 
                     // Check if destination exists
                     if (destination_file.query_exists()) {
-                        show_error_dialog("Error", "File already exists at destination: %s".printf(destination_path));
+                        show_error_dialog("File already exists at destination: %s".printf(destination_path));
                         continue;
                     }
 
                     // Try to move the file
                     if (!source_file.move(destination_file, FileCopyFlags.NONE)) {
-                        show_error_dialog("Error", "Failed to move file: %s".printf(source_path));
+                        show_error_dialog("Failed to move file: %s".printf(source_path));
                     } else {
                         _directory(current_directory.text);
                         // Record the action with correct paths
@@ -639,7 +647,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                         ));
                     }
                 } catch (GLib.Error e) {
-                    show_error_dialog("Error", "Error moving file: %s".printf(e.message));
+                    show_error_dialog("Error moving file: %s".printf(e.message));
                 }
             }
 
@@ -649,11 +657,9 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         view.add_controller(drag_dest);
     }
 
-    private void show_error_dialog(string title, string message) {
-        var dialog = new Gtk.AlertDialog(message);
-        // dialog.title = title;
-        dialog.buttons = new string[]{ "OK" };
-        dialog.show(this);
+    public void show_error_dialog(string message) {
+        warning_label.label = message;
+        warning_box.show();
     }
 
     private void setup_context_menu(Gtk.Widget view) {

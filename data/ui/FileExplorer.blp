@@ -49,6 +49,35 @@ template $FileExplorer : Gtk.Window {
       }
     }
 
+    // New warning box
+    Box warning_box {
+      orientation: horizontal;
+      spacing: 6;
+      margin-bottom: 6;
+      visible: false; // Initially hidden
+      hexpand: true;
+      styles ["warning-box"]
+
+      Image warning_icon {
+        styles ["warning-icon"]
+        icon-name: "dialog-warning";
+        pixel-size: 24;
+      }
+
+      Label warning_label {
+        styles ["warning-label"]
+        label: "Warning";
+        hexpand: true;
+        halign: start;
+      }
+
+      Button warning_close_button {
+        styles ["warning-close-button"]
+        icon-name: "window-close-symbolic";
+        tooltip-text: "Close";
+      }
+    }
+
     Box {
       orientation: horizontal;
 
