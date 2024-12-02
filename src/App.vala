@@ -95,11 +95,33 @@ public class FGeronimo : Gtk.Application {
         case "--version":
             response = get_app_version ();
             break;
+        case "-D":
+        case "--directory":
+            if (args.length > 1) {
+                string directory_path = args[1];
+                activate(); // Launch the application
+                open_directory(directory_path);
+                response = "Opening directory: " + directory_path;
+            } else {
+                response = "Error: Directory path not provided";
+            }
+            break;
         default:
             response = "Unknown command. Use -h to see help.";
             break;
         }
         return response;
+    }
+
+    private void open_directory(string path) {
+        foreach (var window in windows) {
+            if (window is FileExplorer) {
+                var file_explorer = window as FileExplorer;
+                if (file_explorer != null) {
+                    file_explorer.navigate_to(path);
+                }
+            }
+        }
     }
 
     private string get_app_version () {
@@ -112,6 +134,7 @@ public class FGeronimo : Gtk.Application {
                + "  \033[34m-T|--toggle-window\033[0m \033[32m<window>\033[0m  | Toggle visibility of the specified window\n"
                + "  \033[34m-Q|--quit\033[0m                    | Quit the application\n"
                + "  \033[34m-I|--inspector\033[0m               | Open the GTK inspector\n"
+               + "  \033[34m-D|--directory\033[0m \033[32m<path>\033[0m  | Open the specified directory at startup\n"
                + "  \033[34m-h|--help\033[0m                    | Show this help message";
     }
     
