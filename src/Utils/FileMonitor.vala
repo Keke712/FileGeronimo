@@ -114,7 +114,7 @@ public class FileMonitor : Object {
                 unowned List<FileExplorer> list = watchers.get(current_path);
                 foreach (var explorer in list) {
                     Idle.add(() => {
-                        explorer.refresh_current_directory();
+                        explorer._directory(explorer.current_directory.text);
                         return false;
                     });
                 }
