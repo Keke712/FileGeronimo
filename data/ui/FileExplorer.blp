@@ -63,6 +63,7 @@ template $FileExplorer : Gtk.Window {
 
         ListBox important_folders_list {
           selection-mode: single;
+          styles ["important-folders-list"]
 
           ListBoxRow {
             Box {
@@ -181,7 +182,7 @@ template $FileExplorer : Gtk.Window {
             name: "grid_view";
             child: ScrolledWindow {
               GridView grid_view {
-                styles ["file-grid"]
+                styles ["grid-view", "view"]
                 enable-rubberband: true;
                 single-click-activate: false;
               }
@@ -192,7 +193,7 @@ template $FileExplorer : Gtk.Window {
             name: "list_view";
             child: ScrolledWindow {
               ListView list_view {
-                styles ["file-list"]
+                styles ["list-view", "view"]
                 enable-rubberband: true;
                 single-click-activate: false;
               }

@@ -1,56 +1,52 @@
-$background-color: #ffffff;
-$text-color: #2e3436;
-$selected-color: #3584e4;
+// Base colors
+$text-color: #ffffff;
+$hover-color: rgba(53, 132, 228, 0.1);
+$selected-color: #3581e4;
 
-// Dark theme colors
-$dark-text: #ffffff;
-$dark-hover: rgba(53, 132, 228, 0.1);  // Slight blue opacity
-$selected-color: #3584e4;
-
-.file-list, .file-grid {
+// Common transparent backgrounds
+.view, .headerbar, scrolledwindow {
   background: transparent;
-  color: $dark-text;
+}
 
-  row, flowboxchild {
-    padding: 8px;
-    border-radius: 6px;
-    margin: 2px;
+// Common text color
+.view, .drag-icon, .drag-icon label {
+  color: $text-color;
+}
 
-    &:selected {
-      background-color: $selected-color;
-      color: $dark-text;
-    }
-
-    &:hover:not(:selected) {
-      background-color: $dark-hover;  // Add slight blue opacity on hover
+// View elements styling
+.view {
+  &.grid-view, &.list-view {
+    child, row {  // Ajout de 'row' pour cibler les éléments de la ListView
+      &:selected {
+        background-color: $selected-color;
+        color: $text-color;
+      }
+      
+      &:hover:not(:selected) {
+        background-color: $hover-color;
+      }
+      
+      // Ajout du style de base
+      border-radius: 6px;
+      padding: 8px;
+      margin: 2px;
     }
   }
+}
+
+// Specific styles
+.important-folders-list {
+  border-radius: 10px;
 }
 
 .headerbar {
-  background: transparent;
   padding: 6px;
-}
-
-.grid-view {
-  background: transparent;
-  color: $dark-text;
-  
-  flowbox {
-    padding: 12px;
-  }
-}
-
-// Optional: Update ScrolledWindow background to match
-scrolledwindow {
-  background: transparent;
 }
 
 .drag-icon {
   padding: 12px;
   border-radius: 8px;
-  background-color: rgba(53, 132, 228, 0.9);  // More opaque blue
-  color: white;
+  background-color: rgba(53, 132, 228, 0.9);
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
   
   image {
@@ -59,7 +55,10 @@ scrolledwindow {
   }
   
   label {
-    color: white;
     font-weight: bold;
   }
+}
+
+.cut-opacity {
+  opacity: 0.5;
 }
