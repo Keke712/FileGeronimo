@@ -125,11 +125,11 @@ public class FGeronimo : Gtk.Application {
     }
 
     private string get_app_version () {
-        return "1.0";
+        return "1.1";
     }
 
     private string print_help () {
-        return "Usage: morghulis [options]\n"
+        return "Usage: fgeronimo [options]\n"
                + "Options:\n"
                + "  \033[34m-T|--toggle-window\033[0m \033[32m<window>\033[0m  | Toggle visibility of the specified window\n"
                + "  \033[34m-Q|--quit\033[0m                    | Quit the application\n"
