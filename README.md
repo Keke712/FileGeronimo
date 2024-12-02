@@ -33,3 +33,6 @@ A fast, keyboard-driven file explorer built with GTK4 and GtkLayerShell for Linu
 
 3. Install with meson:
     `$ sudo meson install -C build`
+
+4. Launch
+    `$ fgeronimo`
