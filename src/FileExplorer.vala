@@ -91,6 +91,11 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
             }
         });
 
+        // Subscribe to cut files changes
+        factions.cut_files_changed.connect(() => {
+            refresh_current_directory();
+        });
+
     }
 
     // Core Layer Methods
@@ -311,7 +316,9 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                     
                     if (icon != null) {
                         if (file.is_folder) {
-                            icon.icon_name = "folder";
+                            icon.icon_name = file.icon_name;
+                            string full_path = Path.build_filename(current_directory.text, file.name);
+                            icon.opacity = factions.is_file_cut(full_path) ? 0.5 : 1.0;
                         } else {
                             string name_lower = file.name.down();
                             string full_path = Path.build_filename(current_directory.text, file.name);
@@ -343,6 +350,8 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                     
                     if (label != null) {
                         label.label = file.name;
+                        string full_path = Path.build_filename(current_directory.text, file.name);
+                        label.opacity = factions.is_file_cut(full_path) ? 0.5 : 1.0;
                     }
 
                     // Only set details label if in list view and if it exists
@@ -350,9 +359,11 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                         var details_label = children.nth_data(2) as Gtk.Label;
                         if (details_label != null) {
                             details_label.label = file.date.format("%Y-%m-%d %H:%M");
+                            details_label.opacity = file.opacity;
                         }
                     }
                 }
+
             });
 
             grid_view.factory = grid_factory;
@@ -413,7 +424,9 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
                 if (icon != null) {
                     if (file.is_folder) {
-                        icon.icon_name = "folder";
+                        icon.icon_name = file.icon_name;
+                        string full_path = Path.build_filename(current_directory.text, file.name);
+                        icon.opacity = factions.is_file_cut(full_path) ? 0.5 : 1.0;
                     } else {
                         // Déterminer l'icône en fonction de l'extension du fichier
                         string name_lower = file.name.down();
@@ -436,10 +449,13 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
 
                 if (name_label != null) {
                     name_label.label = file.name;
+                    string full_path = Path.build_filename(current_directory.text, file.name);
+                    name_label.opacity = factions.is_file_cut(full_path) ? 0.5 : 1.0;
                 }
 
                 if (date_label != null) {
                     date_label.label = file.date.format("%Y-%m-%d %H:%M");
+                    date_label.opacity = file.opacity;
                 }
             });
 
@@ -487,21 +503,19 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                 (dragged_files.data.is_folder ? "folder" : "text-x-generic") : 
                 "folder";
 
-            try {
-                var icon_theme = Gtk.IconTheme.get_for_display(get_display());
-                Gtk.IconPaintable paintable = icon_theme.lookup_icon(
-                    icon_name,
-                    null,
-                    32,
-                    1,
-                    Gtk.TextDirection.NONE,
-                    Gtk.IconLookupFlags.PRELOAD
-                );
-                
-                source.set_icon(paintable, 16, 16);
-            } catch (Error e) {
-                print("Error setting drag icon: %s\n", e.message);
-            }
+            
+            var icon_theme = Gtk.IconTheme.get_for_display(get_display());
+            Gtk.IconPaintable paintable = icon_theme.lookup_icon(
+                icon_name,
+                null,
+                32,
+                1,
+                Gtk.TextDirection.NONE,
+                Gtk.IconLookupFlags.PRELOAD
+            );
+            
+            source.set_icon(paintable, 16, 16);
+            
 
             var builder = new GLib.StringBuilder();
             foreach (var file_obj in dragged_files) {

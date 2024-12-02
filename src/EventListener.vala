@@ -4,7 +4,6 @@ public class EventListener : Object {
     private bool c_pressed = false;
     private bool v_pressed = false;
     private bool x_pressed = false;
-    private List<string> copied_files = new List<string>();
 
     public EventListener(FileExplorer explorer) {
         this.explorer = explorer;
@@ -66,12 +65,23 @@ public class EventListener : Object {
         if (ctrl_pressed && c_pressed) {
             explorer.factions.copy_selected_files(explorer);
         } else if (ctrl_pressed && v_pressed) {
-            explorer.factions.paste_copied_files(explorer);
+            handle_paste();
         } else if (ctrl_pressed && x_pressed) {
+            cut_selected_items_opacity();
             print("CTRL + X pressed\n");
         } else if (keyval == 65535) { // Delete key
             explorer.factions.move_selected_to_trash(explorer);
         }
+    }
+
+    private void cut_selected_items_opacity() {
+        explorer.factions.cut_selected_files(explorer);
+        print("Selected files marked as cut\n");
+    }
+
+    public void handle_paste() {
+        explorer.factions.paste_copied_files(explorer);
+        // clear_cut_files est maintenant géré dans paste_copied_files
     }
 
     private void handle_tab_completion() {
