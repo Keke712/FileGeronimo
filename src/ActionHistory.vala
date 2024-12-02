@@ -2,7 +2,8 @@ public class FileAction {
     public enum ActionType {
         MOVE,
         DELETE,
-        RENAME
+        RENAME,
+        PASTE
     }
 
     public ActionType action_type { get; private set; }
@@ -61,6 +62,11 @@ public class ActionHistory : Object {
                         var original = File.new_for_path(action.source_path);
                         success = current.move(original, FileCopyFlags.NONE);
                     }
+                    break;
+
+                case FileAction.ActionType.PASTE:
+                    var pasted_file = File.new_for_path(action.destination_path);
+                    success = pasted_file.delete();
                     break;
             }
         } catch (Error e) {
