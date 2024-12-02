@@ -4,6 +4,7 @@ public class EventListener : Object {
     private bool c_pressed = false;
     private bool v_pressed = false;
     private bool x_pressed = false;
+    private List<string> copied_files = new List<string>();
 
     public EventListener(FileExplorer explorer) {
         this.explorer = explorer;
@@ -58,43 +59,19 @@ public class EventListener : Object {
             v_pressed = true;
         } else if (keyval == 120) { // X key
             x_pressed = true;
+        } else if (keyval == 65471) { // F2 key
+            print("F2 pressed\n");
         }
 
         if (ctrl_pressed && c_pressed) {
-            print("CTRL + C pressed\n");
+            explorer.factions.copy_selected_files(explorer);
         } else if (ctrl_pressed && v_pressed) {
-            print("CTRL + V pressed\n");
+            explorer.factions.paste_copied_files(explorer);
         } else if (ctrl_pressed && x_pressed) {
             print("CTRL + X pressed\n");
         } else if (keyval == 65535) { // Delete key
-            move_selected_to_trash();
+            explorer.factions.move_selected_to_trash(explorer);
         }
-    }
-
-    private void move_selected_to_trash() {
-        var selection_model = explorer.is_grid_view ? explorer.grid_view.model : explorer.list_view.model as Gtk.MultiSelection;
-        if (selection_model == null) return;
-
-        var selected = selection_model.get_selection();
-        for (uint i = 0; i < selected.get_size(); i++) {
-            uint position = selected.get_nth(i);
-            var file_obj = selection_model.get_item(position) as FileObject;
-            if (file_obj != null) {
-                string file_path = Path.build_filename(explorer.current_directory.text, file_obj.name);
-                try {
-                    var file = File.new_for_path(file_path);
-                    file.trash();
-                    explorer.action_history.add_action(new FileAction(
-                        FileAction.ActionType.DELETE,
-                        file_path,
-                        ""
-                    ));
-                } catch (Error e) {
-                    print("Error moving file to trash: %s\n", e.message);
-                }
-            }
-        }
-        explorer.refresh_current_directory();
     }
 
     private void handle_tab_completion() {
