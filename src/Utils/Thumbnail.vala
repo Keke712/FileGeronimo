@@ -12,19 +12,17 @@ public class Thumbnail : Object {
         
         request_queue = new AsyncQueue<ThumbnailRequest?>();
         worker_running = true;
-        try {
-            worker_thread = new Thread<void>("thumbnail-worker", () => {
-                while (worker_running) {
-                    var request = request_queue.pop();
-                    if (request != null) {
-                        process_thumbnail_request(request);
-                    }
+        
+        worker_thread = new Thread<void>("thumbnail-worker", () => {
+            while (worker_running) {
+                var request = request_queue.pop();
+                if (request != null) {
+                    process_thumbnail_request(request);
                 }
-            });
-            is_initialized = true;
-        } catch (Error e) {
-            warning("Failed to create thumbnail worker thread: %s", e.message);
-        }
+            }
+        });
+        is_initialized = true;
+
     }
 
     public static void request_thumbnail(string file_path, owned ThumbnailCallback callback) {
@@ -121,11 +119,7 @@ public class Thumbnail : Object {
             request_queue.push(empty_request);
 
             if (worker_thread != null) {
-                try {
-                    worker_thread.join();
-                } catch (Error e) {
-                    warning("Failed to join thumbnail worker thread: %s", e.message);
-                }
+                worker_thread.join();
             }
 
             request_queue = null;
