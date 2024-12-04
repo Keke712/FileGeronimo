@@ -1,0 +1,141 @@
+using Gtk 4.0;
+
+template $Settings : Gtk.Window {
+  title: "Settings";
+  default-width: 600;
+  default-height: 400;
+
+  Box {
+    orientation: horizontal;
+
+    // Sidebar
+    ListBox sidebar {
+      selection-mode: single;
+      margin-start: 12;
+      margin-top: 12;
+      margin-bottom: 12;
+      width-request: 150;
+
+      ListBoxRow {
+        Label {
+          label: "General";
+          halign: start;
+        }
+      }
+
+      ListBoxRow {
+        Label {
+          label: "Appearance";
+          halign: start;
+        }
+      }
+
+      ListBoxRow {
+        Label {
+          label: "Shortcuts";
+          halign: start;
+        }
+      }
+    }
+
+    // Main content area
+    Stack content_stack {
+      hexpand: true;
+      vexpand: true;
+      margin-start: 12;
+      margin-end: 12;
+      margin-top: 12;
+      margin-bottom: 12;
+
+      StackPage {
+        name: "general";
+        child: Label {
+          label: "General Settings";
+        };
+      }
+
+      StackPage {
+        name: "appearance";
+        child: Box {
+          orientation: vertical;
+          spacing: 12;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          margin-bottom: 12;
+
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+
+            Label {
+              label: "Theme:";
+              halign: start;
+            }
+
+            DropDown theme_dropdown {
+              model: StringList {
+                strings [
+                  "System",
+                  "Light",
+                  "Dark"
+                ]
+              };
+            }
+          }
+
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+
+            Label {
+              label: "Accent Color:";
+              halign: start;
+            }
+
+            ColorDialogButton accent_color {
+              dialog: ColorDialog {};
+              rgba: "rgb(53,132,228)";
+            }
+          }
+
+          Box {
+            orientation: horizontal;
+            spacing: 12;
+
+            Label {
+              label: "Folder Color:";
+              halign: start;
+            }
+
+            ColorDialogButton folder_color {
+              dialog: ColorDialog {};
+              rgba: "rgb(53,132,228)";
+            }
+          }
+
+          CheckButton custom_css_enabled {
+            label: "Enable Custom CSS";
+          }
+
+          TextView custom_css_view {
+            sensitive: bind custom_css_enabled.active;
+            monospace: true;
+            wrap-mode: word;
+            top-margin: 12;
+            bottom-margin: 12;
+            left-margin: 12;
+            right-margin: 12;
+          }
+        };
+      }
+
+      StackPage {
+        name: "shortcuts";
+        child: Label {
+          label: "Shortcuts Settings";
+        };
+      }
+    }
+  }
+}

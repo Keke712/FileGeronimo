@@ -1,0 +1,29 @@
+<schemalist>
+  <schema id="com.github.keke712.fgeronimo" path="/com/github/keke712/fgeronimo/">
+    <key name="theme" type="s">
+      <default>'system'</default>
+      <summary>Theme</summary>
+      <description>The theme of the application. Possible values: 'system', 'light', 'dark'.</description>
+    </key>
+    <key name="accent-color" type="s">
+      <default>'#3581e4'</default>
+      <summary>Accent Color</summary>
+      <description>The accent color of the application in RGBA format.</description>
+    </key>
+    <key name="folder-color" type="s">
+      <default>'#3581e4'</default>
+      <summary>Folder Color</summary>
+      <description>The color of folders in RGBA format.</description>
+    </key>
+    <key name="custom-css-enabled" type="b">
+      <default>false</default>
+      <summary>Custom CSS Enabled</summary>
+      <description>Whether custom CSS is enabled.</description>
+    </key>
+    <key name="custom-css" type="s">
+      <default>''</default>
+      <summary>Custom CSS</summary>
+      <description>The custom CSS to apply to the application.</description>
+    </key>
+  </schema>
+</schemalist>

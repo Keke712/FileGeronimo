@@ -34,6 +34,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
     [GtkChild] public unowned Image warning_icon;
     [GtkChild] public unowned Label warning_label;
     [GtkChild] public unowned Button warning_close_button;
+    [GtkChild] public unowned Button settings_button; // Add this line to declare the settings button
 
     // Construct
     public FileExplorer (Gtk.Application app) {
@@ -111,6 +112,8 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
         warning_close_button.clicked.connect(() => {
             warning_box.hide();
         });
+
+        settings_button.clicked.connect(show_settings); // Connect the settings button signal
 
     }
 
@@ -333,6 +336,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                     if (icon != null) {
                         if (file.is_folder) {
                             icon.icon_name = file.icon_name;
+                            icon.add_css_class("folder-icon"); // Add this line
                             string full_path = Path.build_filename(current_directory.text, file.name);
                             icon.opacity = factions.is_file_cut(full_path) ? 0.5 : 1.0;
                         } else {
@@ -441,6 +445,7 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
                 if (icon != null) {
                     if (file.is_folder) {
                         icon.icon_name = file.icon_name;
+                        icon.add_css_class("folder-icon"); // Add this line
                         string full_path = Path.build_filename(current_directory.text, file.name);
                         icon.opacity = factions.is_file_cut(full_path) ? 0.5 : 1.0;
                     } else {
@@ -718,5 +723,10 @@ public class FileExplorer : Gtk.Window, ILayerWindow {
             print("Error searching directory: %s\n", e.message);
             return null;
         }
+    }
+
+    private void show_settings() {
+        var settings_window = Settings.get_instance();
+        settings_window.present();
     }
 }

@@ -4,5 +4,6 @@
         <file>fgeronimo.css</file>
         <file preprocess="xml-stripblanks">ui/FileExplorer.ui</file>
         <file preprocess="xml-stripblanks">ui/ContextMenu.ui</file>
+        <file preprocess="xml-stripblanks">ui/Settings.ui</file>
     </gresource>
 </gresources>

@@ -34,5 +34,12 @@ A fast, keyboard-driven file explorer built with GTK4 and GtkLayerShell for Linu
 3. Install with meson:
     `$ sudo meson install -C build`
 
-4. Launch
+4. Compile settings
+    ### Copy the schema file to the system schema directory
+    `$ sudo cp /fgeronimo/data/schemas/com.github.keke712.fgeronimo.gschema.xml /usr/share/glib-2.0/schemas/`
+
+    ### Compile the GSettings schemas
+    `$ sudo glib-compile-schemas /usr/share/glib-2.0/schemas/`
+
+5. Launch
     `$ fgeronimo`

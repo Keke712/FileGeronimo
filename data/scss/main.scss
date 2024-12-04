@@ -3,6 +3,11 @@ $text-color: #ffffff;
 $hover-color: rgba(53, 132, 228, 0.1);
 $selected-color: #3581e4;
 
+// Folder icon color
+.folder-icon {
+  color: var(--folder-color);
+}
+
 // Common transparent backgrounds
 .view, .headerbar, scrolledwindow {
   background: transparent;
@@ -13,17 +18,27 @@ $selected-color: #3581e4;
   color: $text-color;
 }
 
+// Sidebar selection styling
+.sidebar row:selected {
+  background-color: var(--accent_bg_color);
+  color: $text-color;
+}
+
+.sidebar row:hover:not(:selected) {
+  background-color: var(--accent_hover_color);
+}
+
 // View elements styling
 .view {
   &.grid-view, &.list-view {
     child, row {  // Ajout de 'row' pour cibler les éléments de la ListView
       &:selected {
-        background-color: $selected-color;
+        background-color: var(--accent_bg_color);
         color: $text-color;
       }
       
       &:hover:not(:selected) {
-        background-color: $hover-color;
+        background-color: var(--accent_hover_color);
       }
       
       // Ajout du style de base
@@ -57,6 +72,11 @@ $selected-color: #3581e4;
   label {
     font-weight: bold;
   }
+}
+
+// Folder icon styling
+.folder-icon {
+  color: var(--folder-color);
 }
 
 .warning-box {

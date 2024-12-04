@@ -26,6 +26,21 @@ public class FGeronimo : Gtk.Application {
             load_css ();
             css_loaded = true;
         }
+        
+        // Appliquer la couleur d'accent au démarrage
+        var settings = new GLib.Settings("com.github.keke712.fgeronimo");
+        string accent_color = settings.get_string("accent-color");
+        var accent_rgba = Gdk.RGBA();
+        if (accent_rgba.parse(accent_color)) {
+            Settings.apply_accent_color(accent_rgba);
+        }
+
+        // Appliquer la couleur des dossiers au démarrage
+        string folder_color = settings.get_string("folder-color");
+        var folder_rgba = Gdk.RGBA();
+        if (folder_rgba.parse(folder_color)) {
+            Settings.apply_folder_color(folder_rgba);
+        }
     
         windows.append (new FileExplorer (this));
     

@@ -3,6 +3,7 @@ source_files = [
     'FileExplorer.vala',
     'ActionHistory.vala',
     'EventListener.vala',
+    'Settings.vala',
     
     'Utils/FileActions.vala',
     'Utils/FileObject.vala',

@@ -3,6 +3,7 @@ subdir('scss')
 targets = files(
     'ui/FileExplorer.blp',
     'ui/ContextMenu.blp',
+    'ui/Settings.blp',
 )
 
 blueprints = custom_target(
